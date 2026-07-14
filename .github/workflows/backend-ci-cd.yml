@@ -1,0 +1,65 @@
+name: Backend CI/CD
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "backend/**"
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: starttech-backend-api
+  EKS_CLUSTER: starttech-cluster
+  NAMESPACE: starttech
+  DEPLOYMENT_NAME: much-todo-backend
+  CONTAINER_NAME: backend
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and Push Docker Image
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity \
+          --query Account \
+          --output text)
+
+          IMAGE_URI=$ACCOUNT_ID.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${GITHUB_SHA}
+          docker build \
+          -t $IMAGE_URI \
+          ./backend
+          docker push $IMAGE_URI
+          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+
+      - name: Configure Kubernetes
+        run: |
+          aws eks update-kubeconfig \
+          --region $AWS_REGION \
+          --name $EKS_CLUSTER
+
+      - name: Deploy new image
+        run: |
+          kubectl set image deployment/${DEPLOYMENT_NAME} \
+          ${CONTAINER_NAME}=${IMAGE_URI} \
+          -n ${NAMESPACE}
+
+      - name: Verify rollout
+        run:
+          kubectl rollout status deployment/${DEPLOYMENT_NAME} \
+          -n ${NAMESPACE}
