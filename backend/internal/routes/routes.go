@@ -22,12 +22,17 @@ func RegisterRoutes(
 	authMiddleware gin.HandlerFunc,
 ) {
 
+	// Health endpoints
 	api := router.Group("/api")
-	// Public routes
 	api.GET("/health", healthHandler.CheckHealth)
 
+	apiV1 := router.Group("/api/v1")
+	apiV1.GET("/health", healthHandler.CheckHealth)
+
+	router.GET("/health", healthHandler.CheckHealth)
+
 	// Swagger documentation route
-	api.GET("/swagger/*any", func(c *gin.Context) {
+	apiV1.GET("/swagger/*any", func(c *gin.Context) {
 		scheme := "http"
 		if c.Request.TLS != nil || strings.HasPrefix(c.Request.Header.Get("X-Forwarded-Proto"), "https") {
 			scheme = "https"
@@ -40,7 +45,7 @@ func RegisterRoutes(
 		ginSwagger.WrapHandler(swaggerFiles.Handler)(c)
 	})
 
-	authRoutes := api.Group("/auth")
+	authRoutes := apiV1.Group("/auth")
 	{
 		authRoutes.POST("/register", userHandler.Register)
 		authRoutes.POST("/login", userHandler.Login)
@@ -49,7 +54,7 @@ func RegisterRoutes(
 	}
 
 	// Protected routes
-	protected := api.Group("")
+	protected := apiV1.Group("")
 	protected.Use(authMiddleware)
 	{
 		// Protected task routes (using /tasks to avoid conflict with frontend /todos route)
