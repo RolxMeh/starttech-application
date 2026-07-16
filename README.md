@@ -193,13 +193,13 @@ scripts/
 Backend health endpoint
 
 ```text
-GET /api/health
+GET /api/v1/health
 ```
 
 Example
 
 ```bash
-curl https://<cloudfront-domain>/api/health
+curl https://<cloudfront-domain>/api/v1/health
 ```
 
 ---
