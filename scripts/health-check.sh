@@ -2,7 +2,9 @@
 
 set -euo pipefail
 
-URL="${1:-https://d1yiiqufgmzmmn.cloudfront.net/api/v1/health}"
+#URL="${1:-https://d1yiiqufgmzmmn.cloudfront.net/api/v1/health}"
+
+URL="${1:-https://ddxojilxslbxu.cloudfront.net/api/v1/health}"
 
 echo "Checking ${URL}"
 
